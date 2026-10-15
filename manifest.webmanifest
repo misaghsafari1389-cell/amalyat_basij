@@ -1,0 +1,22 @@
+{
+  "id": "./",
+  "name": "BLACKOUT: STRIKE FORCE",
+  "short_name": "BLACKOUT",
+  "description": "شوتر اول‌شخص سه‌بعدی تک‌نفره",
+  "lang": "fa",
+  "dir": "rtl",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "landscape",
+  "background_color": "#111710",
+  "theme_color": "#171d17",
+  "icons": [
+    {
+      "src": "./icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ]
+}

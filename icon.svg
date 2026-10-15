@@ -1,0 +1,22 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" role="img" aria-labelledby="title desc">
+<title id="title">BLACKOUT STRIKE FORCE</title>
+<desc id="desc">Tactical olive shield with a geometric sight reticle</desc>
+<defs>
+  <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
+    <stop offset="0" stop-color="#303d2d"/>
+    <stop offset="1" stop-color="#101710"/>
+  </linearGradient>
+  <linearGradient id="gold" x1="0" y1="0" x2="0" y2="1">
+    <stop offset="0" stop-color="#e5ce86"/>
+    <stop offset="1" stop-color="#b99443"/>
+  </linearGradient>
+</defs>
+<rect width="512" height="512" rx="104" fill="url(#bg)"/>
+<path d="M256 54 408 111 393 277Q373 385 256 451 139 385 119 277L104 111Z" fill="#1a2519" stroke="url(#gold)" stroke-width="13"/>
+<path d="M256 98 369 140 358 270Q342 344 256 397 170 344 154 270L143 140Z" fill="none" stroke="#71805c" stroke-width="5"/>
+<circle cx="256" cy="235" r="78" fill="none" stroke="url(#gold)" stroke-width="12"/>
+<circle cx="256" cy="235" r="22" fill="#d8b96a"/>
+<path d="M256 126V190 M256 280V344 M147 235H211 M301 235H365" stroke="#e5ce86" stroke-width="12" stroke-linecap="round"/>
+<path d="M190 363h132" stroke="#d8b96a" stroke-width="8" stroke-linecap="round"/>
+<path d="M216 383h80" stroke="#7f8c6a" stroke-width="5" stroke-linecap="round"/>
+</svg>

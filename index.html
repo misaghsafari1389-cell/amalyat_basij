@@ -1,0 +1,288 @@
+<!doctype html>
+<html lang="fa" dir="rtl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
+<meta name="theme-color" content="#171d17">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="BLACKOUT STRIKE">
+<link rel="manifest" href="./manifest.webmanifest">
+<link rel="icon" type="image/svg+xml" href="./icon.svg">
+<link rel="apple-touch-icon" href="./icon.svg">
+<title>BLACKOUT: STRIKE FORCE MOBILE</title>
+<style>
+:root{--olive:#a9b58a;--gold:#d8b96a;--panel:#111a}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{margin:0;width:100%;height:100%;overflow:hidden;background:#111;color:#f2f2eb;font:14px Tahoma,Arial,sans-serif;touch-action:none;user-select:none}
+canvas{display:block;position:fixed;inset:0;z-index:0}
+#hud{position:fixed;inset:env(safe-area-inset-top,8px) 8px env(safe-area-inset-bottom,8px);z-index:2;pointer-events:none;text-shadow:0 2px 4px #000}
+#top{display:flex;justify-content:space-between;gap:6px;direction:rtl;align-items:flex-start}
+.panel{background:#101710c9;padding:8px 10px;border:1px solid #a3b28a55;border-radius:7px;font-size:12px;line-height:1.5;backdrop-filter:blur(4px)}
+#stats{max-width:48%}#round{white-space:nowrap;text-align:center}#ammo{white-space:nowrap;text-align:left;direction:rtl}
+#cross{position:fixed;left:50%;top:50%;transform:translate(-50%,-50%);font:24px Arial;color:#e6e8d5;text-shadow:0 0 5px #000}
+#message{position:fixed;top:22%;left:50%;transform:translateX(-50%);color:#f1d17a;font-size:17px;text-align:center;white-space:nowrap}
+#notice{position:fixed;bottom:10px;left:50%;transform:translateX(-50%);color:#ddd;background:#111b;padding:6px 9px;border-radius:5px;font-size:11px;text-align:center;max-width:95vw}
+#overlay,#pause{position:fixed;inset:0;z-index:5;background:#080b0de8;display:grid;place-items:center;padding:18px}
+#pause{display:none}
+.card{width:min(520px,100%);max-height:90dvh;overflow:auto;background:#1b211c;border:1px solid #758269;padding:20px;border-radius:12px;text-align:center;box-shadow:0 12px 60px #0009}
+h1{color:var(--gold);font-size:clamp(21px,5vw,29px);margin:8px 0}
+p{line-height:1.8;color:#c9ccbf;margin:10px 0}
+button{font:inherit;color:#f7f7f0;background:#354130;border:1px solid #8b9b7b;border-radius:8px;padding:11px 14px;margin:4px;min-height:42px;touch-action:manipulation}
+button:active{background:#59684d;transform:scale(.98)}
+input{accent-color:var(--gold)}
+#mobile{display:none;position:fixed;inset:auto 10px max(10px,env(safe-area-inset-bottom)) 10px;z-index:3;align-items:end;justify-content:space-between;pointer-events:none;gap:8px}
+.control-cluster{display:flex;flex-wrap:wrap;gap:5px;align-items:end;max-width:48%;pointer-events:auto}
+#mobile button{pointer-events:auto;background:#172018d9;border-color:#a4b08a88;padding:10px 12px;min-width:46px;min-height:46px;font-size:13px}
+#movePad{display:grid;grid-template-columns:repeat(3,42px);grid-template-rows:repeat(2,42px);gap:3px}
+#movePad button{min-width:0;min-height:0;padding:0;font-size:18px}
+#movePad .blank{visibility:hidden}
+#lookArea{position:fixed;left:35%;top:20%;width:65%;height:60%;z-index:1;touch-action:none;background:transparent;display:none}
+.small{font-size:11px;color:#b8c0b1}
+@media(pointer:coarse),(max-width:800px){#mobile{display:flex}#notice{bottom:110px}#lookArea{display:block}#stats{font-size:11px;padding:6px 7px}#ammo,#round{font-size:11px;padding:6px 7px}}
+</style>
+</head>
+<body>
+<div id="hud">
+  <div id="top">
+    <div class="panel" id="stats">سلامت: 100<br>دشمن: 6</div>
+    <div class="panel" id="round">راند 0</div>
+    <div class="panel" id="ammo">تپانچه 12 / 48</div>
+  </div>
+  <div id="cross">+</div><div id="message"></div>
+</div>
+<div id="notice">موبایل: سمت راست صفحه را بکش تا نگاه کنی · رایانه: WASD + ماوس · شلیک: کلیک/دکمه</div>
+<div id="lookArea" aria-label="ناحیه چرخاندن دوربین"></div>
+<div id="mobile">
+  <div class="control-cluster">
+    <div id="movePad">
+      <button class="blank">·</button><button id="mf">▲</button><button class="blank">·</button>
+      <button id="ml">◀</button><button id="mb">▼</button><button id="mr">▶</button>
+    </div>
+  </div>
+  <div class="control-cluster">
+    <button id="mfire">شلیک</button><button id="mreload">خشاب</button>
+    <button id="mweapon">تعویض سلاح</button><button id="msprint">دویدن</button>
+    <button id="mpause">توقف</button>
+  </div>
+</div>
+<div id="overlay"><div class="card">
+  <h1>BLACKOUT: STRIKE FORCE</h1>
+  <p>شوتر اول‌شخص سه‌بعدی تک‌نفره. شش ربات را از پا درآور و راند را ببر.</p>
+  <p>نسخهٔ موبایل: حرکت با دکمه‌های جهت‌دار و چرخاندن دوربین با کشیدن انگشت در نیمهٔ راست صفحه. روی رایانه از WASD و ماوس استفاده کن.</p>
+  <button id="start">شروع مسابقه</button>
+  <p>حساسیت نگاه: <input id="sens" type="range" min=".5" max="3" step=".1" value="1"></p>
+  <p>صدا: <input id="sound" type="checkbox" checked></p>
+  <p class="small">برای بارگیری موتور سه‌بعدی به اینترنت نیاز است. این نسخه چندنفره نیست.</p>
+</div></div>
+<div id="pause"><div class="card"><h2 id="pauseTitle">بازی متوقف شد</h2>
+  <p id="pauseText">می‌توانی ادامه بدهی یا راند را از نو آغاز کنی.</p>
+  <button id="resume">ادامه</button><button id="next">شروع راند جدید</button><button id="home">منوی اصلی</button>
+</div></div>
+<script src="https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.min.js"></script>
+<script>
+(()=> {
+"use strict";
+const $=id=>document.getElementById(id);
+if ("serviceWorker" in navigator && location.protocol.startsWith("http")) {
+  window.addEventListener("load", () => {
+    navigator.serviceWorker.register("./sw.js").catch(err => console.warn("PWA worker registration failed", err));
+  });
+}
+const coarse=matchMedia("(pointer:coarse)").matches || innerWidth<800;
+if(!window.THREE){$("overlay").innerHTML='<div class="card"><h2>موتور سه‌بعدی بارگذاری نشد</h2><p>این بازی برای اجرا به اینترنت و دسترسی به cdn.jsdelivr.net نیاز دارد. اتصال را بررسی و صفحه را دوباره بارگذاری کن.</p></div>';return;}
+let renderer,scene,camera,clock,player,active=false,state="menu",sensitivity=1,soundOn=true;
+let walls=[],bots=[],keys=Object.create(null),ray=new THREE.Raycaster(),round=0,wins=0,losses=0,timeLeft=100;
+let gunIndex=0,reloading=0,mouseDown=false,ending=false,audioCtx=null,lastMessageTimer=0;
+const mobile={up:false,down:false,left:false,right:false,fire:false,sprint:false};
+const guns=[
+ {name:"تپانچه",damage:42,rate:.32,mag:12,reload:1.0,spread:.008,range:70,clip:12,reserve:48,last:0},
+ {name:"تفنگ",damage:27,rate:.12,mag:30,reload:1.45,spread:.014,range:82,clip:30,reserve:90,last:0}
+];
+try{
+ renderer=new THREE.WebGLRenderer({antialias:false,powerPreference:"high-performance",alpha:false});
+ renderer.setPixelRatio(Math.min(devicePixelRatio||1,coarse?1.15:1.5));renderer.setSize(innerWidth,innerHeight);
+ renderer.setClearColor(0x788176);document.body.appendChild(renderer.domElement);
+ scene=new THREE.Scene();scene.background=new THREE.Color(0x788176);scene.fog=new THREE.Fog(0x788176,27,86);
+ camera=new THREE.PerspectiveCamera(76,innerWidth/innerHeight,.1,140);
+ clock=new THREE.Clock();
+}catch(e){$("overlay").innerHTML='<div class="card"><h2>WebGL در دسترس نیست</h2><p>مرورگر یا دستگاه نتوانست گرافیک سه‌بعدی را راه‌اندازی کند.</p></div>';return;}
+function mat(color){return new THREE.MeshLambertMaterial({color});}
+scene.add(new THREE.HemisphereLight(0xc3d4d1,0x303329,1.8));
+const sun=new THREE.DirectionalLight(0xffe0ad,2.0);sun.position.set(-12,25,8);scene.add(sun);
+function box(x,y,z,sx,sy,sz,color,blocks=true){
+ const m=new THREE.Mesh(new THREE.BoxGeometry(sx,sy,sz),mat(color));m.position.set(x,y,z);scene.add(m);
+ if(blocks)walls.push(m);return m;
+}
+function buildMap(){
+ box(0,-.25,0,52,.5,52,0x41483c,false);
+ box(0,2,-26,52,4,1,0x343a32);box(0,2,26,52,4,1,0x343a32);
+ box(-26,2,0,1,4,52,0x343a32);box(26,2,0,1,4,52,0x343a32);
+ const blocks=[
+ [-13,1.5,-12,2,3,17],[-13,1.5,12,2,3,18],[13,1.5,-12,2,3,18],[13,1.5,12,2,3,17],
+ [-4,1.4,-8,12,2.8,2],[5,1.4,8,12,2.8,2],[-20,1,0,5,2,3],[20,1,0,5,2,3],
+ [-5,1.15,18,2,2.3,8],[5,1.15,-18,2,2.3,8],[0,.75,0,4,1.5,4],
+ [-19,1,-18,4,2,4],[19,1,18,4,2,4]
+ ];
+ for(const b of blocks)box(...b,0x535749);
+ for(let x=-20;x<=20;x+=10){const l=new THREE.PointLight(0xd8b46a,.35,12);l.position.set(x,3,0);scene.add(l);}
+ // floor lane markings
+ const stripeMat=new THREE.MeshBasicMaterial({color:0x9a9c7c});
+ for(let z=-22;z<=22;z+=4){const s=new THREE.Mesh(new THREE.BoxGeometry(.12,.015,1.2),stripeMat);s.position.set(0,.015,z);scene.add(s);}
+}
+buildMap();
+const playerRadius=.36;
+function obstacleAt(x,z,r=playerRadius){
+ for(const w of walls){
+  const p=w.position,g=w.geometry.parameters;
+  const hx=g.width/2+r,hz=g.depth/2+r;
+  if(Math.abs(x-p.x)<hx&&Math.abs(z-p.z)<hz&&p.y+g.height/2>0)return true;
+ }
+ return false;
+}
+function lineClear(a,b){
+ const dir=b.clone().sub(a),dist=dir.length();if(dist<.01)return true;dir.normalize();ray.set(a,dir);ray.far=Math.max(0,dist-.35);
+ return ray.intersectObjects(walls,false).length===0;
+}
+const gunGroup=new THREE.Group();camera.add(gunGroup);
+const gunBody=new THREE.Mesh(new THREE.BoxGeometry(.22,.18,.62),mat(0x292d29));gunBody.position.set(.34,-.28,-.55);gunGroup.add(gunBody);
+const barrel=new THREE.Mesh(new THREE.CylinderGeometry(.035,.045,.38,8),mat(0x111311));barrel.rotation.x=Math.PI/2;barrel.position.set(.34,-.23,-.91);gunGroup.add(barrel);
+const sight=new THREE.Mesh(new THREE.BoxGeometry(.055,.04,.08),mat(0x555b50));sight.position.set(.34,-.17,-.57);gunGroup.add(sight);
+function setGunVisual(){gunGroup.scale.setScalar(gunIndex===0?.82:1.12);gunBody.material.color.setHex(gunIndex===0?0x292d29:0x343b32);}
+function msg(t){$("message").textContent=t;clearTimeout(lastMessageTimer);lastMessageTimer=setTimeout(()=>{$("message").textContent="";},1600);}
+function sound(freq=180,duration=.07){
+ if(!soundOn)return;try{audioCtx??=new (window.AudioContext||window.webkitAudioContext)();if(audioCtx.state==="suspended")audioCtx.resume();
+ const o=audioCtx.createOscillator(),g=audioCtx.createGain();o.type="square";o.frequency.value=freq;g.gain.value=.022;o.connect(g);g.connect(audioCtx.destination);o.start();g.gain.exponentialRampToValueAtTime(.001,audioCtx.currentTime+duration);o.stop(audioCtx.currentTime+duration);}catch{}
+}
+function makeBot(x,z,index){
+ const group=new THREE.Group();
+ const uniform=mat(index%2?0x8b5545:0x64704e),skin=mat(0xb49370),dark=mat(0x272a25);
+ const body=new THREE.Mesh(new THREE.CapsuleGeometry(.34,.62,3,6),uniform);body.position.y=.82;group.add(body);
+ const head=new THREE.Mesh(new THREE.SphereGeometry(.2,8,6),skin);head.position.y=1.38;group.add(head);
+ const gun=new THREE.Mesh(new THREE.BoxGeometry(.12,.12,.65),dark);gun.position.set(.25,.9,-.25);group.add(gun);
+ group.position.set(x,0,z);scene.add(group);
+ return {group,body,head,hp:100,alive:true,fire:.8+Math.random(),last:new THREE.Vector3(x,0,z),state:"patrol",waypoint:0,points:[new THREE.Vector3(x,0,z),new THREE.Vector3(x*.45,0,z*.45),new THREE.Vector3(-x*.4,0,-z*.4)]};
+}
+function updateHud(){
+ const g=guns[gunIndex];$("stats").innerHTML=`سلامت: ${Math.ceil(player?.userData.hp??100)}<br>دشمن زنده: ${bots.filter(b=>b.alive).length}`;
+ $("ammo").textContent=`${g.name} ${g.clip} / ${g.reserve}`;$("round").textContent=`راند ${round} · ${Math.ceil(timeLeft)}ث · برد ${wins}`;
+}
+function resetRound(){
+ ending=false;timeLeft=100;reloading=0;gunIndex=0;
+ for(const b of bots)scene.remove(b.group);bots=[];
+ if(!player){player=new THREE.Object3D();scene.add(player);player.add(camera);}
+ player.position.set(0,1.65,22);player.rotation.set(0,0,0);camera.position.set(0,0,0);camera.rotation.set(0,0,0);
+ player.userData.hp=100;guns[0].clip=12;guns[0].reserve=48;guns[1].clip=30;guns[1].reserve=90;setGunVisual();
+ [[-20,-20],[-7,-21],[8,-20],[20,-19],[-20,-7],[20,7]].forEach((p,i)=>bots.push(makeBot(p[0],p[1],i)));
+ state="playing";active=true;clock.getDelta();updateHud();msg("راند "+round+" آغاز شد");
+}
+function startMatch(){
+ $("overlay").style.display="none";$("pause").style.display="none";
+ round++;resetRound();
+ if(!coarse && renderer.domElement.requestPointerLock)renderer.domElement.requestPointerLock();
+}
+function finish(win,reason){
+ if(ending)return;ending=true;state="roundOver";active=false;
+ if(win)wins++;else losses++;sound(win?520:80,.18);
+ $("pauseTitle").textContent=(win?"پیروزی":"شکست")+" · "+reason;
+ $("pauseText").textContent=`برد: ${wins} · باخت: ${losses} · برای بازی دوباره راند جدید را انتخاب کن.`;
+ setTimeout(()=>{if(state==="roundOver")$("pause").style.display="grid";},350);
+}
+function reload(){
+ if(state!=="playing"||reloading>0)return;const g=guns[gunIndex];
+ if(g.clip>=g.mag||g.reserve<=0){msg("خشاب پر است یا مهمات ذخیره نداری");return;}
+ reloading=g.reload;sound(90,.1);msg("تعویض خشاب…");
+}
+function shoot(){
+ if(state!=="playing"||!active||reloading>0)return;
+ const g=guns[gunIndex],now=performance.now()/1000;if(now-g.last<g.rate)return;g.last=now;
+ if(g.clip<=0){msg("خشاب خالی است · دکمه خشاب");sound(65,.04);return;}g.clip--;
+ const dir=new THREE.Vector3(0,0,-1).applyQuaternion(camera.getWorldQuaternion(new THREE.Quaternion()));
+ dir.x+=(Math.random()-.5)*g.spread;dir.y+=(Math.random()-.5)*g.spread;dir.normalize();
+ camera.getWorldPosition(ray.ray.origin);ray.set(ray.ray.origin,dir);ray.far=g.range;
+ const targetMeshes=[];for(const b of bots)if(b.alive){targetMeshes.push(b.body,b.head);}
+ const hits=ray.intersectObjects([...walls,...targetMeshes],false);
+ if(hits.length){
+  const hit=hits[0],bot=bots.find(b=>b.alive&&(b.body===hit.object||b.head===hit.object));
+  if(bot){bot.hp-=g.damage;msg("اصابت");sound(420,.045);if(bot.hp<=0){bot.alive=false;scene.remove(bot.group);sound(300,.1);if(bots.every(b=>!b.alive))finish(true,"همهٔ دشمنان حذف شدند");}}
+  else sound(110,.04);
+ }else sound(gunIndex?130:190,.06);
+ gunGroup.position.z=.08;setTimeout(()=>gunGroup.position.z=0,55);updateHud();
+}
+function hurt(amount){if(state!=="playing")return;player.userData.hp-=amount;sound(75,.1);if(player.userData.hp<=0){player.userData.hp=0;updateHud();finish(false,"سلامت تمام شد");}}
+function movePlayer(dx,dz){
+ const nx=player.position.x+dx,nz=player.position.z+dz;
+ if(!obstacleAt(nx,player.position.z))player.position.x=nx;
+ if(!obstacleAt(player.position.x,nz))player.position.z=nz;
+}
+let botTick=0;
+function updateBots(dt){
+ botTick-=dt;if(botTick>0)return;botTick=.12;
+ const pp=player.position.clone();pp.y=1.2;
+ for(const b of bots){if(!b.alive)continue;
+  const bp=b.group.position.clone().add(new THREE.Vector3(0,1,0)),dist=bp.distanceTo(pp),sees=dist<27&&lineClear(bp,pp);
+  if(sees){b.state="engage";b.last.copy(player.position);}else if(b.state==="engage")b.state="investigate";
+  const target=sees?player.position:(b.state==="investigate"?b.last:b.points[b.waypoint]);
+  const dx=target.x-b.group.position.x,dz=target.z-b.group.position.z,d=Math.hypot(dx,dz);
+  if(d>1.2){
+   const step=Math.min(d,(sees?1.5:2.0)*dt),nx=b.group.position.x+dx/d*step,nz=b.group.position.z+dz/d*step;
+   if(obstacleAt(nx,nz,.34)){
+    const opts=[[0,step],[0,-step],[step,0],[-step,0]];let moved=false;
+    for(const [ox,oz] of opts){if(!obstacleAt(b.group.position.x+ox,b.group.position.z+oz,.34)){b.group.position.x+=ox;b.group.position.z+=oz;moved=true;break;}}
+    if(!moved&&b.state==="patrol")b.waypoint=(b.waypoint+1)%b.points.length;
+   }else{b.group.position.x=nx;b.group.position.z=nz;}
+  }else if(b.state==="patrol")b.waypoint=(b.waypoint+1)%b.points.length;
+  if(sees){b.group.rotation.y=Math.atan2(player.position.x-b.group.position.x,player.position.z-b.group.position.z);b.fire-=.12;
+   if(b.fire<=0){b.fire=1.1+Math.random()*.7;if(Math.random()<.36)hurt(7+Math.random()*5);}
+  }
+ }
+}
+function frame(){
+ requestAnimationFrame(frame);const dt=Math.min(clock.getDelta(),.05);
+ if(state==="playing"&&active){
+  timeLeft-=dt;if(timeLeft<=0)finish(false,"زمان راند تمام شد");
+  let f=(keys.KeyW||mobile.up?1:0)-(keys.KeyS||mobile.down?1:0);
+  let s=(keys.KeyD||mobile.right?1:0)-(keys.KeyA||mobile.left?1:0);
+  const len=Math.hypot(f,s);if(len>1){f/=len;s/=len;}
+  const speed=(keys.ShiftLeft||keys.ShiftRight||mobile.sprint?7:4.7)*dt;
+  const forward=new THREE.Vector3(0,0,-1).applyQuaternion(player.quaternion);forward.y=0;
+  const right=new THREE.Vector3(1,0,0).applyQuaternion(player.quaternion);right.y=0;
+  movePlayer((forward.x*f+right.x*s)*speed,(forward.z*f+right.z*s)*speed);
+  if(reloading>0){reloading-=dt;if(reloading<=0){const g=guns[gunIndex],n=Math.min(g.mag-g.clip,g.reserve);g.clip+=n;g.reserve-=n;updateHud();}}
+  if(mouseDown||mobile.fire)shoot();updateBots(dt);updateHud();
+ }
+ renderer.render(scene,camera);
+}
+frame();
+addEventListener("resize",()=>{camera.aspect=innerWidth/innerHeight;camera.updateProjectionMatrix();renderer.setSize(innerWidth,innerHeight);renderer.setPixelRatio(Math.min(devicePixelRatio||1,coarse?1.15:1.5));});
+addEventListener("keydown",e=>{keys[e.code]=true;if(["Space","ArrowUp","ArrowDown"].includes(e.code))e.preventDefault();
+ if(e.code==="KeyR")reload();if(e.code==="Digit1"||e.code==="Digit2"){gunIndex=e.code==="Digit1"?0:1;setGunVisual();updateHud();}
+ if(e.code==="Escape"&&state==="playing"){state="paused";active=false;$("pause").style.display="grid";$("pauseTitle").textContent="بازی متوقف شد";document.exitPointerLock?.();}
+});
+addEventListener("keyup",e=>keys[e.code]=false);
+renderer.domElement.addEventListener("mousedown",e=>{if(e.button===0){mouseDown=true;if(!coarse&&state==="playing"&&document.pointerLockElement!==renderer.domElement)renderer.domElement.requestPointerLock?.();}});
+addEventListener("mouseup",()=>mouseDown=false);
+document.addEventListener("mousemove",e=>{if(!coarse&&document.pointerLockElement===renderer.domElement&&state==="playing"){player.rotation.y-=e.movementX*.002*sensitivity;camera.rotation.x=THREE.MathUtils.clamp(camera.rotation.x-e.movementY*.002*sensitivity,-1.45,1.45);}});
+document.addEventListener("pointerlockchange",()=>{if(!coarse&&document.pointerLockElement!==renderer.domElement&&state==="playing"){mouseDown=false;state="paused";active=false;$("pause").style.display="grid";$("pauseTitle").textContent="بازی متوقف شد";}});
+document.addEventListener("visibilitychange",()=>{if(document.hidden&&state==="playing"){state="paused";active=false;mouseDown=false;$("pause").style.display="grid";$("pauseTitle").textContent="بازی متوقف شد";}});
+$("start").onclick=startMatch;
+$("resume").onclick=()=>{if(state==="paused"){state="playing";active=true;$("pause").style.display="none";clock.getDelta();if(!coarse)renderer.domElement.requestPointerLock?.();}};
+$("next").onclick=()=>{round++;resetRound();$("pause").style.display="none";if(!coarse)renderer.domElement.requestPointerLock?.();};
+$("home").onclick=()=>{state="menu";active=false;$("pause").style.display="none";$("overlay").style.display="grid";document.exitPointerLock?.();};
+$("sens").oninput=e=>{sensitivity=Number(e.target.value);saveSettings();};
+$("sound").onchange=e=>{soundOn=e.target.checked;saveSettings();};
+function saveSettings(){try{localStorage.setItem("bsf-mobile-settings",JSON.stringify({sensitivity,soundOn}));}catch{}}
+try{const v=JSON.parse(localStorage.getItem("bsf-mobile-settings"));if(Number.isFinite(v?.sensitivity)){sensitivity=Math.max(.5,Math.min(3,v.sensitivity));$("sens").value=sensitivity;}if(typeof v?.soundOn==="boolean"){$("sound").checked=soundOn=v.soundOn;}}catch{}
+function bindHold(id,name){const el=$(id);if(!el)return;const on=e=>{e.preventDefault();mobile[name]=true;el.setPointerCapture?.(e.pointerId);};const off=e=>{if(e)e.preventDefault();mobile[name]=false;};el.addEventListener("pointerdown",on);["pointerup","pointercancel","lostpointercapture"].forEach(ev=>el.addEventListener(ev,off));}
+bindHold("mfire","fire");bindHold("mf","up");bindHold("mb","down");bindHold("ml","left");bindHold("mr","right");bindHold("msprint","sprint");
+$("mreload").onclick=reload;$("mweapon").onclick=()=>{gunIndex=1-gunIndex;setGunVisual();updateHud();};
+$("mpause").onclick=()=>{if(state==="playing"){state="paused";active=false;$("pause").style.display="grid";$("pauseTitle").textContent="بازی متوقف شد";}};
+let touchLook=null;
+$("lookArea").addEventListener("pointerdown",e=>{if(state!=="playing")return;e.preventDefault();touchLook={id:e.pointerId,x:e.clientX,y:e.clientY};$("lookArea").setPointerCapture?.(e.pointerId);});
+$("lookArea").addEventListener("pointermove",e=>{if(!touchLook||touchLook.id!==e.pointerId||state!=="playing")return;e.preventDefault();const dx=e.clientX-touchLook.x,dy=e.clientY-touchLook.y;touchLook.x=e.clientX;touchLook.y=e.clientY;player.rotation.y-=dx*.006*sensitivity;camera.rotation.x=THREE.MathUtils.clamp(camera.rotation.x-dy*.005*sensitivity,-1.42,1.42);});
+function endLook(e){if(touchLook&&(!e||touchLook.id===e.pointerId))touchLook=null;}
+$("lookArea").addEventListener("pointerup",endLook);$("lookArea").addEventListener("pointercancel",endLook);$("lookArea").addEventListener("lostpointercapture",endLook);
+})();
+</script>
+</body></html>
